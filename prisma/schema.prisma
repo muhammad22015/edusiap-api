@@ -1,0 +1,186 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model answers {
+  answer_id   Int      @id @default(autoincrement())
+  question_id Int
+  answer      String   @db.VarChar(255)
+  is_correct  Boolean  @default(false)
+  question    question @relation(fields: [question_id], references: [question_id], onDelete: Cascade, onUpdate: Restrict, map: "question_id_foreign")
+
+  @@index([question_id], map: "question_id_foreign")
+}
+
+model history {
+  history_id Int      @id @default(autoincrement())
+  user_id    Int
+  video_id   Int
+  watched_at DateTime @default(now()) @db.Timestamp(0)
+  user       user     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "history_user_id_foreign")
+  video      video    @relation(fields: [video_id], references: [video_id], onDelete: Cascade, onUpdate: Restrict, map: "history_video_id_foreign")
+
+  @@unique([user_id, video_id], map: "user_id_video_id_unique")
+  @@index([video_id], map: "video_id")
+  @@index([user_id], map: "user_id")
+}
+
+model likes {
+  user_id  Int
+  video_id Int
+  liked_at DateTime @default(now()) @db.Timestamp(0)
+  user     user     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "likes_user_id_foreign")
+  video    video    @relation(fields: [video_id], references: [video_id], onDelete: Cascade, onUpdate: Restrict, map: "likes_video_id_foreign")
+
+  @@id([user_id, video_id])
+  @@index([video_id], map: "video_id")
+}
+
+model playlist {
+  playlist_id     Int               @id @default(autoincrement())
+  title           String            @db.VarChar(255)
+  category        playlist_category @default(Other)
+  upload_date     DateTime          @default(now()) @db.Timestamp(0)
+  changes_date    DateTime          @default(now()) @db.Timestamp(0)
+  playlist_videos playlist_videos[]
+}
+
+model playlist_videos {
+  playlist_id Int
+  video_id    Int
+  position    Int
+  playlist    playlist @relation(fields: [playlist_id], references: [playlist_id], onDelete: Cascade, onUpdate: Restrict, map: "playlist_videos_playlist_id_foreign")
+  video       video    @relation(fields: [video_id], references: [video_id], onDelete: Cascade, onUpdate: Restrict, map: "playlist_videos_video_id_foreign")
+
+  @@id([playlist_id, video_id])
+  @@index([video_id], map: "video_id")
+}
+
+model question {
+  question_id Int       @id @default(autoincrement())
+  quiz_id     Int
+  title       String    @db.VarChar(255)
+  position    Int       @default(1)
+  answers     answers[]
+  quiz        quiz      @relation(fields: [quiz_id], references: [quiz_id], onDelete: Cascade, onUpdate: Restrict, map: "quiz_id_foreign")
+
+  @@index([quiz_id], map: "quiz_id_foreign")
+}
+
+model quiz {
+  quiz_id    Int         @id @default(autoincrement())
+  video_id   Int         @unique(map: "video_id_unique")
+  title      String      @db.VarChar(255)
+  created_at DateTime    @default(now()) @db.Timestamp(0)
+  question   question[]
+  video      video       @relation(fields: [video_id], references: [video_id], onDelete: Cascade, onUpdate: Restrict, map: "video_id_foreign")
+  user_quiz  user_quiz[]
+}
+
+model story_book {
+  book_id      Int      @id @default(autoincrement())
+  thumbnail    String   @db.VarChar(255)
+  title        String   @db.VarChar(255)
+  pages_number Int?
+  book_link    String   @db.VarChar(255)
+  created_at   DateTime @default(now()) @db.Timestamp(0)
+}
+
+model user {
+  user_id      Int           @id @default(autoincrement())
+  email        String        @unique(map: "email_unique") @db.VarChar(255)
+  username     String        @unique(map: "username_unique") @db.VarChar(255)
+  password     String        @db.VarChar(255)
+  is_verified  Boolean       @default(false)
+  tier         user_tier     @default(User)
+  created_at   DateTime      @default(now()) @db.Timestamp(0)
+  history      history[]
+  likes        likes[]
+  user_profile user_profile?
+  user_quiz    user_quiz[]
+  watch_later  watch_later[]
+}
+
+model video {
+  video_id        Int               @id @default(autoincrement())
+  thumbnail       String            @db.VarChar(255)
+  title           String            @db.VarChar(255)
+  description     String?           @db.Text
+  category        video_category    @default(Other)
+  view_count      Int               @default(0)
+  video_link      String            @db.VarChar(255)
+  upload_date     DateTime          @default(now()) @db.Timestamp(0)
+  history         history[]
+  likes           likes[]
+  playlist_videos playlist_videos[]
+  quiz            quiz?
+  watch_later     watch_later[]
+}
+
+model watch_later {
+  user_id  Int
+  video_id Int
+  added_at DateTime @default(now()) @db.Timestamp(0)
+  user     user     @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "watch_later_user_id_foreign")
+  video    video    @relation(fields: [video_id], references: [video_id], onDelete: Cascade, onUpdate: Restrict, map: "watch_later_video_id_foreign")
+
+  @@id([user_id, video_id])
+  @@index([video_id], map: "video_id")
+}
+
+model user_profile {
+  profile_id Int     @id @default(autoincrement())
+  fullname   String  @db.VarChar(255)
+  phone      String  @db.VarChar(255)
+  user_id    Int     @unique(map: "user_id_unique")
+  avatar     String? @default("https://randomuser.me/api/portraits/men/1.jpg") @db.VarChar(255)
+  user       user    @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "user_id_foreign")
+}
+
+model user_quiz {
+  user_id Int
+  quiz_id Int
+  score   Int
+  quiz    quiz @relation(fields: [quiz_id], references: [quiz_id], onDelete: Cascade, onUpdate: Restrict, map: "user_quiz_quiz_id_foreign")
+  user    user @relation(fields: [user_id], references: [user_id], onDelete: Cascade, onUpdate: Restrict, map: "user_quiz_user_id_foreign")
+
+  @@id([user_id, quiz_id])
+  @@index([quiz_id], map: "quiz_id_foreign")
+  @@index([user_id], map: "user_id_foreign")
+}
+
+model refresh_token {
+  refresh_token String @id @db.VarChar(255)
+}
+
+enum playlist_category {
+  Matematika
+  Sains
+  Baca_Tulis       @map("Baca Tulis")
+  Olahraga
+  Hewan___Tumbuhan @map("Hewan & Tumbuhan")
+  Teknologi
+  Budaya
+  Other
+}
+
+enum video_category {
+  Matematika
+  Sains
+  Baca_Tulis       @map("Baca Tulis")
+  Olahraga
+  Hewan___Tumbuhan @map("Hewan & Tumbuhan")
+  Teknologi
+  Budaya
+  Other
+}
+
+enum user_tier {
+  User
+  Admin
+}
