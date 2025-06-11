@@ -6,7 +6,10 @@ const cors = require('cors');
 app.use(cors({
     origin: [
         'http://localhost:3000',
-        'https://edusiap-api-498867854322.asia-southeast2.run.app'
+        'https://edusiap-api-498867854322.asia-southeast2.run.app',
+        "https://edusiap.online", // tambahkan ini!
+        "https://www.edusiap.online" // kalau ada www
+
     ]
 }));
 app.use(express.json());
